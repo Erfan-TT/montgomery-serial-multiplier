@@ -1,0 +1,97 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{float}
+\geometry{margin=1in}
+
+\title{\textbf{Design and Implementation of a Serial-Bit Montgomery Multiplier in VHDL}}
+\author{Digital Design Lab Report}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report details the design and hardware implementation of a Radix-2 Serial-Bit Montgomery Multiplier. The architecture comprises a custom Data Path (DP) to perform the iterative shift-and-add operations, a Control Path (CP) driven by a Finite State Machine (FSM), and a high-speed Pentium 4-style parallel prefix adder for the final reduction step. The system is described in VHDL and operates efficiently to compute modular multiplication, which is a critical operation in many public-key cryptography algorithms.
+\end{abstract}
+
+\section{Introduction}
+Modular multiplication is a fundamental operation in many cryptographic systems, such as RSA and Elliptic Curve Cryptography. Standard division-based modular reduction is computationally expensive in hardware. The Montgomery multiplication algorithm offers a more efficient alternative by replacing divisions with simple right shifts, making it highly suitable for hardware implementation. This project focuses on a Radix-2 serial-bit implementation, which balances area and performance by iterating over the bits of the multiplier one at a time.
+
+\section{Mathematical Theory}
+The Montgomery multiplication of two integers $A$ and $B$ modulo $N$ computes $P = A \cdot B \cdot R^{-1} \pmod N$, where $R$ is a constant chosen to be a power of 2 (i.e., $R = 2^k$ for a $k$-bit modulus $N$), such that $\gcd(R, N) = 1$. Since $N$ is typically odd in cryptography, this condition is easily met.
+
+The Radix-2 algorithm processes the multiplier $B$ bit by bit, from the Least Significant Bit (LSB) to the Most Significant Bit (MSB). The algorithm is defined as follows:
+
+\begin{enumerate}
+    \item Initialize $T = 0$
+    \item For $i = 0$ to $k-1$:
+    \begin{itemize}
+        \item $T = T + B_i \cdot A$
+        \item If $T_0 == 1$ (i.e., $T$ is odd), then $T = T + N$
+        \item $T = T / 2$ (Implemented as a 1-bit right shift)
+    \end{itemize}
+    \item If $T \geq N$, then $T = T - N$
+    \item Return $T$
+\end{enumerate}
+
+The condition $T_0 == 1$ checks if the intermediate sum is odd. If so, adding the odd modulus $N$ guarantees that the new sum is even, allowing it to be cleanly divided by 2 (shifted right) without precision loss.
+
+\section{Hardware Architecture}
+The multiplier is implemented using a modular VHDL design consisting of three main components: the Control Path (FSM), the Data Path, and a fast Parallel Prefix Adder (P4 Adder).
+
+\subsection{Control Path (FSM)}
+The Control Path (`montgomery\_CP.vhd`) dictates the flow of data through the multiplier. It is implemented as a Moore-style Finite State Machine with the following states:
+\begin{itemize}
+    \item \textbf{IDLE:} The system waits for the `start` signal.
+    \item \textbf{LOAD:} Loads the operands $A$, $B$, and $N$ into their respective registers.
+    \item \textbf{RUN:} Loops for $k$ clock cycles, shifting $B$, updating the index counter, and driving the iterative addition and shift operations.
+    \item \textbf{FINISH:} Asserts the `done` signal once the index reaches the word width.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{fsm_figure} % Generic placeholder
+    \caption{Finite State Machine (FSM) of the Control Path.}
+    \label{fig:fsm}
+\end{figure}
+
+\subsection{Data Path}
+The Data Path (`montgomery\_DP.vhd`) contains the registers and combinational logic required to execute the algorithm's arithmetic. 
+\begin{itemize}
+    \item \textbf{Registers:} Holds the multiplicand $A$, modulus $N$, and the intermediate sum $T$. The multiplier $B$ is stored in a shift register that right-shifts every cycle in the `RUN` state, exposing $B_i$ at the LSB position.
+    \item \textbf{Arithmetic Logic:} A combinational block checks $B_0$. If it is '1', $A$ is added to $T$. Subsequently, it checks the LSB of this new sum; if it is '1', $N$ is added. Finally, the sum is shifted right by 1 bit and stored back into the $T$ register at the next clock edge.
+    \item \textbf{Final Subtraction:} Once the loop concludes, the system must perform $T = T - N$ if $T \geq N$. This is computed as $T + \bar{N} + 1$. 
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{datapath_figure} % Generic placeholder
+    \caption{Data Path Architecture for the Radix-2 Montgomery Multiplier.}
+    \label{fig:datapath}
+\end{figure}
+
+\subsection{Propagate-Carry Adder (P4 Adder)}
+To execute the final subtraction ($T - N$) efficiently, the design employs a fast Pentium 4-style adder (`P4\_adder.vhd`). 
+This adder combines two advanced concepts:
+\begin{enumerate}
+    \item \textbf{Sparse-Tree Carry Generator:} Swiftly computes the carry-in for various blocks of the adder, minimizing the critical path delay normally associated with ripple-carry architectures.
+    \item \textbf{Carry-Select Sum Generator:} Computes two conditional sums per block (assuming carry-in is 0 and 1) and selects the correct one using the multiplexed carries from the sparse tree.
+\end{enumerate}
+The `cout` from this P4 adder indicates whether $T \geq N$. If `cout = '1'`, the subtraction was positive, and the subtracted result is routed to the output. Otherwise, the un-subtracted value of $T$ is used.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{propagate_carry_figure} % Generic placeholder
+    \caption{Architecture of the P4 Propagate-Carry Adder.}
+    \label{fig:p4adder}
+\end{figure}
+
+\section{Conclusion}
+The VHDL implementation of the Radix-2 Montgomery Multiplier effectively isolates the control flow from the data manipulations. The use of a standard shift-and-add core logic keeps the area footprint reasonable, while the integration of the high-speed P4 propagate-carry adder significantly accelerates the critical final reduction step, making this design suitable for demanding cryptographic applications.
+
+\end{document}

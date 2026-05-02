@@ -5,7 +5,9 @@ written in VHDL, using a structured **Control Path / Data Path (FSMD)**
 methodology. The design targets a generic `WIDTH`-bit operand and provides
 **two datapath architectures** that are functionally identical but differ in
 how arithmetic is expressed, making them suitable for a direct synthesis
-comparison.
+comparison. The two architectures are:
+1. Fully behavioral implementation
+2. Structural implementation with P4 adder
 
 ---
 
@@ -74,7 +76,7 @@ montgomery_multiplier        (top level)
 
 ### Control Path FSM
 
-```
+![fsm_image](./docs/images/fsm.png)
           start=1
   ┌──── IDLE ────────────────────────────┐
   │   rst_from_cp=1                      │
@@ -90,9 +92,7 @@ ld=1               sh=1, en_index=1    done=1
 | `RUN`    | `sh`, `en_index`, `busy`    | `eq = '1'` → `FINISH`    |
 | `FINISH` | `done`, `busy`              | Unconditional → `IDLE`   |
 
-The control path is identical for both datapath variants. The `result` output
-is permanently driven combinationally from `result_temp` in both architectures,
-so no dedicated result-latch state is required.
+The control path is identical for both datapath variants.
 
 ---
 

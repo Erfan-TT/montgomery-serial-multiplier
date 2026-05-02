@@ -43,6 +43,7 @@ seq: process( clk, rst, rst_from_cp) begin
             B_reg      <= (others => '0');
             N_reg      <= (others => '0');
             t_reg      <= (others => '0');
+            result_temp <= (others => '0');
             index_counter  <= 0;
     elsif( rising_edge(clk)) then
         if(rst_from_cp = '1') then 
@@ -50,6 +51,7 @@ seq: process( clk, rst, rst_from_cp) begin
             B_reg      <= (others => '0');
             N_reg      <= (others => '0');
             t_reg      <= (others => '0');
+            result_temp <= (others => '0');
             index_counter  <= 0;
         end if;
         
@@ -125,6 +127,7 @@ seq: process( clk, rst, rst_from_cp) begin
             B_reg      <= (others => '0');
             N_reg      <= (others => '0');
             t_reg      <= (others => '0');
+            result_temp <= (others => '0');
             index_counter  <= 0;
     elsif( rising_edge(clk)) then
         if(rst_from_cp = '1') then 
@@ -132,6 +135,7 @@ seq: process( clk, rst, rst_from_cp) begin
             B_reg      <= (others => '0');
             N_reg      <= (others => '0');
             t_reg      <= (others => '0');
+            result_temp <= (others => '0');
             index_counter  <= 0;
         end if;
         

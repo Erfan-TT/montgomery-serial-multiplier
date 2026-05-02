@@ -12,9 +12,9 @@ Port (
   );
 end montgomery_multiplier;
 
-architecture Behavioral of montgomery_multiplier is
+architecture structural of montgomery_multiplier is
 -- control signals : 
-signal en_index, SH, rst_from_cp, LD, ld_result : std_logic;
+signal en_index, SH, rst_from_cp, LD : std_logic;
 
 -- status signal : 
 signal eq: std_logic ; -- whenever the index reaches to width
@@ -50,4 +50,11 @@ eq=>eq,
 result =>result);
 
 
-end Behavioral;
+end structural;
+
+configuration top_cfg of montgomery_multiplier is
+  for structural 
+    for DP : montgomery_DP use entity work.montgomery_DP(behavioral);
+  end for;
+  end for;
+end configuration top_cfg;

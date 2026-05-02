@@ -112,10 +112,10 @@ primitives automatically.
 
 ```vhdl
 -- Reduction expressed behaviorally
-if t_next >= resize(N_reg, t_next'length) then
-    t_reg <= t_next - resize(N_reg, t_next'length);
-else
-    t_reg <= t_next;
+if temp >= N_reg then 
+    result_temp <= resize((temp - resize(N_reg, temp'length)), WIDTH); 
+else 
+    result_temp <= resize(temp, WIDTH);
 end if;
 ```
 
@@ -134,14 +134,14 @@ for free.
 ```vhdl
 -- P4 adder always computes t - N combinationally
 p4adder: P4_ADDER generic map(NBIT => WIDTH+3)
-    port map(A => std_logic_vector(t_reg), B => negated_N,
+    port map(A => std_logic_vector(t_reg_next), B => negated_N,
              Cin => '1', S => t_subtracted, Cout => cout);
 
--- MUX selects result at register boundary
+-- MUX selects result combinationally
 if cout = '1' then
-    t_reg <= resize(unsigned(t_subtracted), t_reg'length);
+    result_temp <= resize(unsigned(t_subtracted), WIDTH);
 else
-    t_reg <= t_next;
+    result_temp <= resize(t_reg_next, WIDTH);
 end if;
 ```
 
